@@ -1,0 +1,88 @@
+---
+title: "Chapter 1"
+author: "Chase Bookin"
+date: "March 20, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidycensus)
+library(ggthemes)
+library(ggplot2)
+library(janitor)
+library(dplyr)
+library(gt)
+library(readxl)
+library(sf)
+library(scales)
+library(magrittr)
+library(haven)
+library(infer)
+library(Lahman)
+library(xml2)
+library(rvest)
+```
+
+
+```{r, include=FALSE}
+people <- People %>%
+  select(playerID, nameFirst, nameLast, weight, height, bats, throws)
+
+batting_names <- people %>%
+  left_join(Batting, by = "playerID")
+
+batting_names %>%
+  filter(nameFirst == "Kevin" & nameLast == "Kramer")
+```
+
+```{r, include=FALSE}
+Teams %>%
+  filter(yearID == 2009 & teamIDBR == "NYY")
+```
+
+Lahman Database
+Pg. 13: Avg HR per game by decade and avg strikeouts per game by decade... any
+correlation?
+```{r, echo=FALSE}
+homers_vs_strikeouts <- Teams %>% 
+  mutate(decade = ifelse(yearID %in% 1900:1909, 1900,
+                         ifelse(yearID %in% 1910:1919, 1910,
+                                ifelse(yearID %in% 1920:1929, 1920,
+                                       ifelse(yearID %in% 1930:1939, 1930,
+                                              ifelse(yearID %in% 1940:1949, 1940,
+                                                     ifelse(yearID %in% 1950:1959, 1950,
+                                                            ifelse(yearID %in% 1960:1969, 1960,
+                          ifelse(yearID %in% 1970:1979, 1970,
+                                 ifelse(yearID %in% 1980:1989, 1980,
+                                        ifelse(yearID %in% 1990:1999, 1990,
+                                               ifelse(yearID %in% 2000:2009, 2000,
+                                                      ifelse(yearID %in% 2010:2019, 2010, NA))))))))))))) 
+
+hr_vs_k <- homers_vs_strikeouts %>%
+  group_by(decade) %>%
+  summarize(hr_per_game = sum(HR) / sum(G) * 2,
+            k_per_game = sum(SO) / sum(G) * 2)
+
+plot_hr_vs_k <- hr_vs_k %>%
+  slice(3:12)
+
+ggplot(plot_hr_vs_k, mapping = aes(hr_per_game, k_per_game, label = decade)) +
+  geom_text(check_overlap = TRUE) +
+  theme_economist_white() +
+  labs(
+    x = "Homeruns per Game",
+    y = "Strikeouts per Game",
+    title = "Evolution of Homeruns vs Strikeouts per Game"
+  )
+  
+
+
+```
+
+
+
+
+
+
