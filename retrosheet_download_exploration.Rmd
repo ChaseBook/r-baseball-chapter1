@@ -1,0 +1,51 @@
+---
+title: "retrosheet_download_exploration"
+author: "Chase Bookin"
+date: "March 29, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidycensus)
+library(ggthemes)
+library(ggplot2)
+library(janitor)
+library(dplyr)
+library(gt)
+library(readxl)
+library(sf)
+library(scales)
+library(magrittr)
+library(haven)
+library(infer)
+library(Lahman)
+library(xml2)
+library(rvest)
+library(devtools)
+```
+
+```{r}
+
+# https://bayesball.github.io/VB/Getting_Retrosheet_Files.html
+
+
+
+source_gist("https://gist.github.com/bayesball/8892981",
+            filename="parse.retrosheet2.pbp.R")
+
+source_gist("https://gist.github.com/bayesball/8892999",
+            filename="compute.runs.expectancy.R")
+```
+
+
+```{r}
+parse.retrosheet2.pbp(2018)
+```
+
+```{r}
+source(“parse.retrosheet.pbp.R”)
+```
+
+

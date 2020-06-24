@@ -1,0 +1,198 @@
+---
+title: "Chapter 4"
+author: "Chase Bookin"
+date: "April 29, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidycensus)
+library(ggthemes)
+library(ggplot2)
+library(janitor)
+library(dplyr)
+library(gt)
+library(readxl)
+library(sf)
+library(scales)
+library(magrittr)
+library(haven)
+library(infer)
+library(Lahman)
+library(xml2)
+library(rvest)
+library(devtools)
+library(broom)
+library(retrosheet)
+```
+
+
+
+Page 83 Career HR Race:
+
+```{r, include = FALSE}
+
+get_birthyear <- function(name) {
+  
+  names <- unlist(strsplit(name, " ")) 
+  Master %>%
+    filter(nameFirst == names[1],
+           nameLast == names[2]) %>%
+    mutate(birthyear = ifelse(birthMonth >= 7,
+                              birthYear + 1, birthYear),
+           player = paste(nameFirst, nameLast)) %>%
+    select(playerID, player, birthyear)
+  
+}
+
+```
+
+```{r, echo=FALSE}
+
+player_info <-  bind_rows(get_birthyear("Babe Ruth"),
+                          get_birthyear("Hank Aaron"),
+                          get_birthyear("Barry Bonds"),
+                          get_birthyear("Alex Rodriguez"))
+
+
+hr_data <- Batting %>%
+  inner_join(player_info, by = "playerID") %>%
+  mutate(age = yearID - birthyear) %>%
+  select(player, age, HR) %>%
+  group_by(player) %>%
+  mutate(CHR = cumsum(HR))
+
+
+hr_data %>%
+  ggplot(aes(x = age, y = CHR, linetype = player, color = player)) +
+  geom_line() +
+  theme_light() +
+  labs(
+    x = "Age",
+    y = "Career Home Runs",
+    title = "Career HR Race of Some of Baseball's Best Sluggers",
+    subtitle = "Players: Babe Ruth, Hank Aaron, Barry Bonds, Alex Rodriguez",
+    linetype = "Player",
+    color = "Player"
+  )
+
+
+
+```
+
+
+
+```{r}
+my_teams <- Teams %>%
+  filter(yearID >= 2000) %>%
+  select(teamID, yearID, lgID, G, W, L, R, RA) %>%
+  mutate(RD = R - RA,
+         Wpct = W / (W + L))
+
+
+my_teams %>%
+  ggplot(aes(RD, Wpct)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  theme_economist_white() +
+  labs(
+    x = "Run Differential",
+    y = "Wining Percentage",
+    title = "Run Differential vs. Winning Percentage Since 2000"
+  )
+
+linfit <- lm(Wpct ~ RD, data = my_teams)
+
+linfit_aug <- linfit %>%
+  augment()
+
+  
+```
+
+```{r}
+
+highlight_teams <- linfit_aug %>%
+  arrange(desc(abs(.resid))) %>%
+  head(4)
+
+
+linfit_aug %>%
+  ggplot(aes(x = RD, y = .resid)) +
+  geom_point(alpha = 0.3) +
+  geom_point(data = highlight_teams, color = "dodgerBlue4") +
+  geom_hline(yintercept = 0, linetype = 3) +
+  labs(
+    x = "Run Differential",
+    y = "Residual",
+    title = "Run Differential Residuals"
+  ) + 
+  theme_light()
+
+
+```
+
+
+```{r}
+my_teams <- my_teams %>%
+  mutate(Wpct_pyt = R^2 / (R^2 + RA^2)) %>%
+  mutate(residuals_pyt = Wpct - Wpct_pyt)
+
+my_teams %>%
+  ggplot(aes(Wpct_pyt, Wpct)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  theme_light() +
+  labs(
+    x = "Predicted Pythagorean Win Pct.",
+    y = "Actual Win Pct.",
+    title = "Comparing Pythagorean to True Winning Percentage"
+  )
+```
+
+
+```{r}
+linfit_aug %>%
+  summarize(RMSE = sqrt(mean(.resid^2)))
+
+my_teams %>% 
+  summarize(rmse = sqrt(mean(residuals_pyt^2)))
+```
+
+```{r}
+data2016 <- getRetrosheet("play", 2016, "NYA")
+
+data2016 <- data2016 %>%
+  mutate(runs = AWAY_SCORE_CT + HOME_SCORE_CT)
+```
+
+
+```{r}
+x <- tibble(count = c("c01","c02","c10", "c11", "c21"))
+
+x <- x %>%
+  mutate(balls = str_sub(count,2,2))
+```
+
+
+
+```{r}
+real_estate <- tibble(comp = c(1:5)) %>%
+  mutate(price = c(250000, 175000, 150000, 315000, 225000),
+         sq_ft = c(900, 800, 1100, 1800, 1600),
+         beds = c(2,2,1,2,2),
+         baths = c(1,1,1,2,1),
+         view = c(TRUE, TRUE, FALSE, TRUE, FALSE),
+         wash = c(TRUE, FALSE, TRUE, FALSE, FALSE),
+         renovations = c(FALSE, FALSE, TRUE, FALSE, TRUE))
+
+model_comp <- lm(price ~ sq_ft, data = real_estate)
+
+model_comp_tidy <- model_comp %>%
+  tidy(conf.int = TRUE)
+```
+
+
+
+

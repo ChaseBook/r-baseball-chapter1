@@ -23,6 +23,7 @@ library(infer)
 library(Lahman)
 library(xml2)
 library(rvest)
+library(devtools)
 ```
 
 
@@ -80,8 +81,6 @@ ggplot(plot_hr_vs_k, mapping = aes(hr_per_game, k_per_game, label = decade)) +
 
 
 ```
-
-
 
 
 
